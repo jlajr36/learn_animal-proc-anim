@@ -262,7 +262,12 @@ void setup() {
 void draw() {
   background(40, 44, 52);
 
-    fish.resolve();
-    fish.display();
+  fish.resolve();
 
+  pushMatrix();
+  translate(width/2, height/2);  // move origin to center
+  scale(0.1);                    // 10% size
+  translate(-width/2, -height/2); // move back
+  fish.display();
+  popMatrix();
 }
