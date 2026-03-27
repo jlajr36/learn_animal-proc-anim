@@ -56,5 +56,6 @@ void setup() {
 }
 
 void draw() {
+  background(200);
   _creature.display();
 }
