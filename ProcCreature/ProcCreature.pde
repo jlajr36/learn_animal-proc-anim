@@ -17,6 +17,16 @@ class segment {
     hue = h;
   }
   
+  void update(segment prev) {
+    angle = atan2(prev.y-y,prev.x-x);
+    float d = sqrt(pow(prev.x-x,2)+pow(prev.y-y,2));
+    if(d > distance) {
+      float delta = d - distance;
+      x += delta*cos(angle);
+      y += delta*sin(angle);
+    }
+  }
+  
   void display() {
     pushMatrix();
     translate(x, y);
@@ -30,6 +40,7 @@ class segment {
 class creature {
   ArrayList<segment> body;
   int len = 8; // Number of body segments
+  float speed = 4; // Update speed
   
   creature() {
     body = new ArrayList<segment>();
@@ -37,6 +48,18 @@ class creature {
     for (int i = 0; i < len; i++) {
       float r = r1 - i*(r1/(len-1));
       body.add(new segment(width*0.5-i*r1, height*0.5, 0, r, r, i * 10.0));
+    }
+  }
+  
+  void update() {
+    segment head = body.get(0);
+    head.angle = atan2(mouseY-head.y, mouseX-head.x);
+    head.x += speed*cos(head.angle);
+    head.y += speed*sin(head.angle);
+    for (int i = 1; i < len; i++) {
+      segment current = body.get(i);
+      segment pervious = body.get(i-1);
+      current.update(pervious);
     }
   }
   
@@ -57,5 +80,6 @@ void setup() {
 
 void draw() {
   background(200);
+  _creature.update();
   _creature.display();
 }
