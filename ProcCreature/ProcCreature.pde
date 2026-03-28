@@ -95,6 +95,18 @@ class creature {
       line(x1, y1, x2, y2); // A line to the other side to connect body segments
       //s.display(); // display the circle
     }
+    drawfin();
+  }
+  
+  void drawfin() {
+    for (int i = 2; i < 5; i++) {
+      segment s = body.get(i);
+      pushMatrix();
+      translate(s.x, s.y);
+      rotate(s.angle);
+      line(0, 0, -3*s.distance, 0);
+      popMatrix();
+    }
   }
 }
 
