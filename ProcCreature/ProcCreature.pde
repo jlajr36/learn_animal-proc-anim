@@ -28,11 +28,13 @@ class segment {
   }
   
   void display() {
+    fill(hue, 100, 100);
+    noStroke();
     pushMatrix();
     translate(x, y);
     rotate(angle);
     circle(0, 0, 2*radius);
-    line(0, 0, distance, 0);
+    //line(0, 0, distance, 0);
     popMatrix();
   }
 }
@@ -69,7 +71,7 @@ class creature {
   
   void display() {
     segment head = body.get(0);
-    noFill();
+    fill(head.hue, 100, 100);
     pushMatrix();
     translate(head.x, head.y);
     rotate(head.angle);
@@ -77,6 +79,8 @@ class creature {
     popMatrix();
     for (int i = 0; i < len-1; i++) {
       segment s = body.get(i);
+      s.display(); // display the circle
+      stroke(0);
       segment next = body.get(i+1);
       float x1, y1, x2, y2;
       x1 = s.x + s.radius*cos(s.angle-0.5*PI);
@@ -99,6 +103,7 @@ creature _creature;
 void setup() {
   size(800, 1000);
   _creature = new creature();
+  colorMode(HSB, 360, 100, 100);
 }
 
 void draw() {
