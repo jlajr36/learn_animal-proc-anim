@@ -53,7 +53,11 @@ class creature {
   
   void update() {
     segment head = body.get(0);
-    head.angle = atan2(mouseY-head.y, mouseX-head.x);
+    float a = atan2(mouseY-head.y, mouseX-head.x);
+    float delta = a-head.angle;
+    while (delta < -PI) {delta += (2*PI);}
+    while (delta > PI) {delta -= (2*PI);}
+    head.angle += 0.015*delta;
     head.x += speed*cos(head.angle);
     head.y += speed*sin(head.angle);
     for (int i = 1; i < len; i++) {
