@@ -39,7 +39,7 @@ class segment {
 
 class creature {
   ArrayList<segment> body;
-  int len = 8; // Number of body segments
+  int len = 20; // Number of body segments
   float speed = 4; // Update speed
   
   creature() {
@@ -47,7 +47,7 @@ class creature {
     float r1 = 30; // radius of first segment
     for (int i = 0; i < len; i++) {
       float r = r1 - i*(r1/(len-1));
-      body.add(new segment(width*0.5-i*r1, height*0.5, 0, r, r, i * 10.0));
+      body.add(new segment(width*0.5-i*r1, height*0.5, 0, r, r, i * 10));
     }
   }
   
@@ -64,9 +64,21 @@ class creature {
   }
   
   void display() {
-    for (int i = 0; i < len; i++) {
+    for (int i = 0; i < len-1; i++) {
       segment s = body.get(i);
-      s.display();
+      segment next = body.get(i+1);
+      float x1, y1, x2, y2;
+      x1 = s.x + s.radius*cos(s.angle-0.5*PI);
+      y1 = s.y + s.radius*sin(s.angle-0.5*PI);
+      x2 = next.x + next.radius*cos(next.angle-0.5*PI);
+      y2 = next.y + next.radius*sin(next.angle-0.5*PI);
+      line(x1, y1, x2, y2); // A line to one side to connect body segments
+      x1 = s.x + s.radius*cos(s.angle+0.5*PI);
+      y1 = s.y + s.radius*sin(s.angle+0.5*PI);
+      x2 = next.x + next.radius*cos(next.angle+0.5*PI);
+      y2 = next.y + next.radius*sin(next.angle+0.5*PI);
+      line(x1, y1, x2, y2); // A line to the other side to connect body segments
+      //s.display(); // display the circle
     }
   }
 }
