@@ -64,6 +64,13 @@ class creature {
   }
   
   void display() {
+    segment head = body.get(0);
+    noFill();
+    pushMatrix();
+    translate(head.x, head.y);
+    rotate(head.angle);
+    arc(0, 0, head.radius*4, head.radius*2, -0.5*PI, 0.5*PI);
+    popMatrix();
     for (int i = 0; i < len-1; i++) {
       segment s = body.get(i);
       segment next = body.get(i+1);
