@@ -51,7 +51,7 @@ class creature {
   
   creature() {
     body = new ArrayList<segment>();
-    float r1 = 30;
+    float r1 = 10;
     for (int i = 0; i < len; i++) {
       float r = r1 - i*(r1/(len-1));
       body.add(new segment(width*0.5 - i*r1, height*0.5, 0, r, r, i * 10));
