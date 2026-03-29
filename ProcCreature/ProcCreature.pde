@@ -1,27 +1,38 @@
 // --- Random Color Palettes ---
-// Each palette: {bodyH, bodyS, bodyB, finH, finS, finB}
 float[][] palettes = {
-  {180, 60, 100, 50, 80, 90},   // Bright cyan body, yellow fins
-  {210, 70, 70, 0, 80, 85},     // Deep blue body, red fins
-  {270, 30, 95, 330, 60, 85}    // Soft lavender body, pink fins
+  {180, 60, 100, 50, 80, 90},
+  {210, 70, 70, 0, 80, 85},
+  {270, 30, 95, 330, 60, 85}
 };
 
-// Global color variables
-float BODY_H, BODY_S, BODY_B;
-float FIN_H, FIN_S, FIN_B;
+// Creature parameters
+int NUM_CREATURES = 200;
+ArrayList<Creature> school = new ArrayList<Creature>();
 
-// Autonomous target for head movement
-float targetX, targetY;
-float targetSpeed = 2;
-float targetAngle = 0;
+void setup() {
+  size(1200, 800);
+  colorMode(HSB, 360, 100, 100);
+  for (int i = 0; i < NUM_CREATURES; i++) {
+    school.add(new Creature());
+  }
+}
 
+void draw() {
+  background(0, 0, 95);
+
+  for (Creature c : school) {
+    c.applyBoidRules(school);
+    c.update();
+    c.display();
+  }
+}
+
+// --- Segment Class ---
 class Segment {
   float x, y, angle, distance, radius, hue;
-
   Segment(float nx, float ny, float a, float d, float r, float h) {
     x = nx; y = ny; angle = a; distance = d; radius = r; hue = h;
   }
-
   void update(Segment prev) {
     angle = atan2(prev.y - y, prev.x - x);
     float d = dist(prev.x, prev.y, x, y);
@@ -31,150 +42,123 @@ class Segment {
       y += delta * sin(angle);
     }
   }
-
-  void display() {
-    fill(BODY_H, BODY_S, BODY_B);
-    stroke(BODY_H, BODY_S, BODY_B);
-    strokeWeight(1);
-    pushMatrix();
-    translate(x, y);
-    rotate(angle);
-    circle(0, 0, 2 * radius);
-    popMatrix();
+  void display(float H, float S, float B) {
+    fill(H, S, B);
+    noStroke();
+    circle(x, y, 2*radius);
   }
 }
 
+// --- Creature Class ---
 class Creature {
   ArrayList<Segment> body = new ArrayList<Segment>();
-  int len = 20;
-  float speed = 4;
+  int len = 12;
+  float speed;
+  float BODY_H, BODY_S, BODY_B, FIN_H, FIN_S, FIN_B;
 
   Creature() {
-    float r1 = 10;
+    // Pick random palette
+    int p = int(random(palettes.length));
+    BODY_H = palettes[p][0];
+    BODY_S = palettes[p][1];
+    BODY_B = palettes[p][2];
+    FIN_H = palettes[p][3];
+    FIN_S = palettes[p][4];
+    FIN_B = palettes[p][5];
+
+    speed = random(2, 4);
+
+    float r1 = 6;
     for (int i = 0; i < len; i++) {
       float r = r1 - i * (r1 / (len - 1));
-      body.add(new Segment(width * 0.5 - i * r1, height * 0.5, 0, r, r, i * 10));
+      body.add(new Segment(random(width), random(height), random(TWO_PI), r, r, i*10));
+    }
+  }
+
+  void applyBoidRules(ArrayList<Creature> others) {
+    float neighDist = 50;
+    PVector alignment = new PVector();
+    PVector cohesion = new PVector();
+    PVector separation = new PVector();
+    int count = 0;
+
+    Segment head = body.get(0);
+    PVector headPos = new PVector(head.x, head.y);
+
+    for (Creature other : others) {
+      if (other == this) continue;
+      Segment oHead = other.body.get(0);
+      PVector oPos = new PVector(oHead.x, oHead.y);
+      float d = PVector.dist(headPos, oPos);
+      if (d < neighDist) {
+        alignment.add(PVector.fromAngle(oHead.angle));
+        cohesion.add(oPos);
+        PVector diff = PVector.sub(headPos, oPos);
+        diff.div(d*d);
+        separation.add(diff);
+        count++;
+      }
+    }
+
+    if (count > 0) {
+      alignment.div(count);
+      alignment.setMag(0.03);
+      cohesion.div(count);
+      cohesion.sub(headPos);
+      cohesion.setMag(0.03);
+      separation.setMag(0.05);
+
+      PVector force = new PVector();
+      force.add(alignment);
+      force.add(cohesion);
+      force.add(separation);
+
+      float desiredAngle = force.heading();
+      float delta = desiredAngle - head.angle;
+      delta = (delta + PI) % (2*PI) - PI;
+      head.angle += delta * 0.05;
     }
   }
 
   void update() {
     Segment head = body.get(0);
-    
-    // Move head toward autonomous target
-    float a = atan2(targetY - head.y, targetX - head.x);
-    float delta = a - head.angle;
-    delta = (delta + PI) % (2 * PI) - PI;  // normalize delta to [-PI, PI]
-    head.angle += 0.015 * delta;
     head.x += speed * cos(head.angle);
     head.y += speed * sin(head.angle);
 
+    // Bounce off edges
+    if (head.x < 0) head.angle = PI - head.angle;
+    if (head.x > width) head.angle = PI - head.angle;
+    if (head.y < 0) head.angle = -head.angle;
+    if (head.y > height) head.angle = -head.angle;
+
     // Update body segments
     for (int i = 1; i < len; i++) {
-      body.get(i).update(body.get(i - 1));
+      body.get(i).update(body.get(i-1));
     }
   }
 
   void display() {
-    drawHead();
     drawBody();
     drawFins();
   }
 
-  void drawHead() {
-    Segment head = body.get(0);
-    fill(BODY_H, BODY_S, BODY_B);
-    stroke(BODY_H, BODY_S, BODY_B);
-    strokeWeight(1);
-    pushMatrix();
-    translate(head.x, head.y);
-    rotate(head.angle);
-    arc(0, 0, head.radius * 4, head.radius * 2, -0.5 * PI, 0.5 * PI);
-    popMatrix();
-  }
-
   void drawBody() {
-    for (int i = 0; i < len - 1; i++) {
+    for (int i = 0; i < len; i++) {
       Segment s = body.get(i);
-      Segment next = body.get(i + 1);
-
-      s.display();
-      drawSegmentQuad(s, next);
+      s.display(BODY_H, BODY_S, BODY_B);
     }
   }
 
-  void drawSegmentQuad(Segment s, Segment next) {
-    float[] x1 = {s.x + s.radius * cos(s.angle - 0.5 * PI), s.x + s.radius * cos(s.angle + 0.5 * PI)};
-    float[] y1 = {s.y + s.radius * sin(s.angle - 0.5 * PI), s.y + s.radius * sin(s.angle + 0.5 * PI)};
-    float[] x2 = {next.x + next.radius * cos(next.angle - 0.5 * PI), next.x + next.radius * cos(next.angle + 0.5 * PI)};
-    float[] y2 = {next.y + next.radius * sin(next.angle - 0.5 * PI), next.y + next.radius * sin(next.angle + 0.5 * PI)};
-
-    noStroke();
-    fill(BODY_H, BODY_S, BODY_B);
-    beginShape();
-    vertex(x1[0], y1[0]);
-    vertex(x2[0], y2[0]);
-    vertex(x2[1], y2[1]);
-    vertex(x1[1], y1[1]);
-    endShape(CLOSE);
-
-    stroke(BODY_H, BODY_S, BODY_B);
-    strokeWeight(1);
-    line(x1[0], y1[0], x2[0], y2[0]);
-    line(x1[1], y1[1], x2[1], y2[1]);
-  }
-
   void drawFins() {
-    for (int i = 2; i < 5; i++) {
+    for (int i = 1; i < 4; i++) {
       Segment s = body.get(i);
       pushMatrix();
       translate(s.x, s.y);
       rotate(s.angle);
       stroke(FIN_H, FIN_S, FIN_B);
-      strokeWeight(2);
-      line(0, 0, -3 * s.distance, 0);
+      strokeWeight(1.5);
+      line(0, 0, -3*s.radius, 0);
       popMatrix();
     }
   }
-}
-
-Creature _creature;
-
-void setup() {
-  size(800, 1000);
-  colorMode(HSB, 360, 100, 100);
-
-  // Pick a random palette at startup
-  int p = int(random(palettes.length));
-  BODY_H = palettes[p][0];
-  BODY_S = palettes[p][1];
-  BODY_B = palettes[p][2];
-  FIN_H = palettes[p][3];
-  FIN_S = palettes[p][4];
-  FIN_B = palettes[p][5];
-
-  _creature = new Creature();
-
-  // Initialize autonomous target
-  targetX = width * 0.5;
-  targetY = height * 0.5;
-}
-
-void draw() {
-  background(0, 0, 95);
-
-  // Randomly wiggle target direction for natural movement
-  targetAngle += random(-0.1, 0.1); // small random turn each frame
-
-  // Move target
-  targetX += targetSpeed * cos(targetAngle);
-  targetY += targetSpeed * sin(targetAngle);
-
-  // Bounce target off canvas edges
-  if (targetX < 0) { targetX = 0; targetAngle = PI - targetAngle; }
-  if (targetX > width) { targetX = width; targetAngle = PI - targetAngle; }
-  if (targetY < 0) { targetY = 0; targetAngle = -targetAngle; }
-  if (targetY > height) { targetY = height; targetAngle = -targetAngle; }
-
-  _creature.update();
-  _creature.display();
 }
