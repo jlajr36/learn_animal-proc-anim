@@ -10,6 +10,11 @@ float[][] palettes = {
 float BODY_H, BODY_S, BODY_B;
 float FIN_H, FIN_S, FIN_B;
 
+// Autonomous target for head movement
+float targetX, targetY;
+float targetSpeed = 2;
+float targetAngle = 0;
+
 class Segment {
   float x, y, angle, distance, radius, hue;
 
@@ -54,13 +59,16 @@ class Creature {
 
   void update() {
     Segment head = body.get(0);
-    float a = atan2(mouseY - head.y, mouseX - head.x);
+    
+    // Move head toward autonomous target
+    float a = atan2(targetY - head.y, targetX - head.x);
     float delta = a - head.angle;
     delta = (delta + PI) % (2 * PI) - PI;  // normalize delta to [-PI, PI]
     head.angle += 0.015 * delta;
     head.x += speed * cos(head.angle);
     head.y += speed * sin(head.angle);
 
+    // Update body segments
     for (int i = 1; i < len; i++) {
       body.get(i).update(body.get(i - 1));
     }
@@ -145,10 +153,28 @@ void setup() {
   FIN_B = palettes[p][5];
 
   _creature = new Creature();
+
+  // Initialize autonomous target
+  targetX = width * 0.5;
+  targetY = height * 0.5;
 }
 
 void draw() {
   background(0, 0, 95);
+
+  // Randomly wiggle target direction for natural movement
+  targetAngle += random(-0.1, 0.1); // small random turn each frame
+
+  // Move target
+  targetX += targetSpeed * cos(targetAngle);
+  targetY += targetSpeed * sin(targetAngle);
+
+  // Bounce target off canvas edges
+  if (targetX < 0) { targetX = 0; targetAngle = PI - targetAngle; }
+  if (targetX > width) { targetX = width; targetAngle = PI - targetAngle; }
+  if (targetY < 0) { targetY = 0; targetAngle = -targetAngle; }
+  if (targetY > height) { targetY = height; targetAngle = -targetAngle; }
+
   _creature.update();
   _creature.display();
 }
